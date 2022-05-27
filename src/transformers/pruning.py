@@ -1,23 +1,20 @@
 """
-Pruning utilities
+ * Pruning utilities * 
 
-Based on: 
+Algorithm based on: 
 
 Zhu, M., & Gupta, S. (2017). To prune, or not to prune: Exploring the efficacy of pruning for model compression
 https://doi.org/10.48550/arXiv.1710.01878
 """
 
-from dataclasses import dataclass
 from typing import Optional, List
 import torch
-# from .utils import logging
 
-# logger = logging.get_logger(__name__)
+from .utils import logging
+logger = logging.get_logger(__name__)
+logger.setLevel(logging.INFO)
 
 
-
-
-@dataclass
 class Pruning:
     """Pruning class
 
@@ -31,18 +28,45 @@ class Pruning:
         t0 (int): initial timestep to increase sparsity. 
         n (int): number of pruning steps (in terms of delta_t). 
     """
+    def __init__(self, layers, s_i, s_f, dt, t0, n):
 
-    layers : List[torch.Tensor]
-    s_i : float
-    s_f : float
-    dt : int
-    t0 : int
-    n : int
-    _time : int = 0
 
-    def __post_init__(self):
-        print(f"Defined a pruner with s_i={self.s_i}, s_f={self.s_f}, dt={self.dt}, t0={self.t0}, n={self.n}")    
+        self.layers = layers
+        self.s_i = s_i
+        self.s_f = s_f
+        self.dt = dt
+        self.t0 = t0
+        self.n = n
+        self._time = 0
 
+        # Pruning state of every layer is represented
+        # by the boolean masks. 0 means a neuron is dead. 
+        self.masks = []
+        for layer in self.layers:
+            self.masks.append(torch.ones(layer.shape, dtype=bool))
+
+        logger.info(f"Defined a pruner with s_i={self.s_i}, s_f={self.s_f}, dt={self.dt}, t0={self.t0}, n={self.n}")    
+
+
+    def prune(self, layer, mask, frac=0.1):
+        
+        shape = layer.shape
+
+        single = layer.view(-1)
+        idx = torch.topk(single.abs(),
+                         int(len(single) * frac),
+                         largest=False).indices
+
+        mask.view(-1)[idx] = 0
+        
+        with torch.no_grad():
+            layer *= mask
+        
+        return
+
+
+
+        
     def step(self):
         "Update time stamp"
         self._time += 1
@@ -67,8 +91,11 @@ class Pruning:
 
 def main():
 
-    prune = Pruning(s_i=0, s_f=0.5, dt=10, t0=30, n=7)
-    
+    layer = torch.nn.Linear(100, 10)
+
+    prune = Pruning([layer.weight, layer.bias], s_i=0, s_f=0.5, dt=10, t0=30, n=7)
+    print(prune.masks[0].shape)
+
     for i in range(100):
 
         print(prune.scheduler())

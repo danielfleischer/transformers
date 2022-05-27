@@ -454,8 +454,9 @@ def main():
 
     # logger.info(f"  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
     logger.info(f"  Pruning --- parameters: {pruning_config}")
+    logger.info(f"  Pruning --- number of masks: {len(pruner.masks)}")
 
-
+    exit()
     ##########################################################
 
     # We need to recalculate our total training steps as the size of the training dataloader may have changed.
