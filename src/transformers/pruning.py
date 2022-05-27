@@ -7,6 +7,7 @@ Zhu, M., & Gupta, S. (2017). To prune, or not to prune: Exploring the efficacy o
 https://doi.org/10.48550/arXiv.1710.01878
 """
 
+from operator import itemgetter
 import torch
 
 from .utils import logging
@@ -29,7 +30,7 @@ class Pruning:
     """
     def __init__(self, layers, s_i, s_f, dt, t0, n):
 
-        self.layers = layers
+        # Parameters
         self.s_i = s_i
         self.s_f = s_f
         self.dt = dt
@@ -39,11 +40,12 @@ class Pruning:
 
         # Pruning state of every layer is represented
         # by the boolean masks. 0 means a neuron is dead. 
-        self.masks = []
-        for name, layer in self.layers:
-            self.masks.append(torch.ones(layer.shape, dtype=bool))
+        self.layers = {}
+        for name, layer in layers:
+            self.layers[name] = {"weight" : layer,
+                                 "mask" : torch.ones(layer.shape, dtype=bool)}
 
-        logger.info(f"Defined a pruner with s_i={self.s_i}, s_f={self.s_f}, dt={self.dt}, t0={self.t0}, n={self.n}")    
+        logger.info(f"Defined a pruner; s_i={self.s_i}, s_f={self.s_f}, dt={self.dt}, t0={self.t0}, n={self.n}")    
 
 
     def prune(self):
@@ -55,8 +57,10 @@ class Pruning:
 
         sparsity = self.scheduler()
 
-        for (name, layer), mask in zip(self.layers, self.masks):
+        for value in self.layers.values():
             
+            layer, mask = itemgetter('weight', 'mask')(value)
+
             column = layer.view(-1)
             idx = torch.topk(column.abs(), int(len(column) * sparsity),largest=False).indices
 
@@ -73,8 +77,9 @@ class Pruning:
 
     def _stats(self, num=-1) -> str:
         msg = f"Sparsity: {self.scheduler()}. "
-        msg += f"Non zero weights: {[l[1].count_nonzero().item() for l in self.layers][:num]}"
+        msg += f"Non zero weights: {[l['weight'].count_nonzero().item() for l in self.layers.values()][:num]}"
         return msg
+
 
     def scheduler(self):
         """
@@ -100,12 +105,11 @@ def main():
 
     prune = Pruning([("layer.weight", layer.weight), ("layer.bias", layer.bias)], 
                     s_i=0, s_f=0.5, dt=10, t0=30, n=7)
-    print(prune.masks[0].shape)
+    print(prune.layers)
 
     for i in range(100):
         prune.prune()
-        print(f"Sparsity: {prune.scheduler()}. Non zero weights", 
-              [l[1].count_nonzero() for l in prune.layers])
+        print(prune._stats())
         prune.step()
 
     # print(prune)
