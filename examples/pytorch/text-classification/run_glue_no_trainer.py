@@ -45,7 +45,7 @@ from transformers import (
 )
 from transformers.utils import get_full_repo_name
 from transformers.utils.versions import require_version
-
+from transformers.pruning import Pruning
 
 logger = get_logger(__name__)
 
@@ -440,6 +440,10 @@ def main():
         model, optimizer, train_dataloader, eval_dataloader, lr_scheduler
     )
 
+    # Pruning
+    pruner =  Pruning(**pruning_config)
+    print("9999999999999999999999", pruner)
+
     # We need to recalculate our total training steps as the size of the training dataloader may have changed.
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
     args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch
@@ -522,6 +526,8 @@ def main():
                 optimizer.step()
                 lr_scheduler.step()
                 optimizer.zero_grad()
+                pruner.step()
+                print(pruner)
                 progress_bar.update(1)
                 completed_steps += 1
 
