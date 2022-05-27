@@ -7,7 +7,6 @@ Zhu, M., & Gupta, S. (2017). To prune, or not to prune: Exploring the efficacy o
 https://doi.org/10.48550/arXiv.1710.01878
 """
 
-from typing import Optional, List
 import torch
 
 from .utils import logging
@@ -30,7 +29,6 @@ class Pruning:
     """
     def __init__(self, layers, s_i, s_f, dt, t0, n):
 
-
         self.layers = layers
         self.s_i = s_i
         self.s_f = s_f
@@ -48,24 +46,25 @@ class Pruning:
         logger.info(f"Defined a pruner with s_i={self.s_i}, s_f={self.s_f}, dt={self.dt}, t0={self.t0}, n={self.n}")    
 
 
-    def prune(self, layer, mask, frac=0.1):
+    def prune(self):
+        """
+        Prune the layers specified when creating a Pruner.
+        Calculate sparsity level using current timestamp and the scheduler
+        function. 
+        """
+
+        sparsity = self.scheduler()
+
+        for layer, mask in zip(self.layers, self.masks):
+            
+            column = layer.view(-1)
+            idx = torch.topk(column.abs(), int(len(column) * sparsity),largest=False).indices
+
+            mask.view(-1)[idx] = 0
+            
+            with torch.no_grad():
+                layer *= mask
         
-        shape = layer.shape
-
-        single = layer.view(-1)
-        idx = torch.topk(single.abs(),
-                         int(len(single) * frac),
-                         largest=False).indices
-
-        mask.view(-1)[idx] = 0
-        
-        with torch.no_grad():
-            layer *= mask
-        
-        return
-
-
-
         
     def step(self):
         "Update time stamp"
@@ -97,8 +96,9 @@ def main():
     print(prune.masks[0].shape)
 
     for i in range(100):
-
-        print(prune.scheduler())
+        prune.prune()
+        print(f"Sparsity: {prune.scheduler()}. Non zero weights", 
+              [l.count_nonzero() for l in prune.layers])
         prune.step()
 
     # print(prune)
