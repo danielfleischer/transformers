@@ -55,16 +55,20 @@ class Pruning:
         function. 
         """
 
-        sparsity = self.scheduler()
+        # Updating masks every dt timestamps
+        # But need to prune every timestamp
 
+        update = self._time % self.dt == 0
+        if update: sparsity = self.scheduler()
+            
         for value in self.layers.values():
             
             layer, mask = itemgetter('weight', 'mask')(value)
 
-            column = layer.view(-1)
-            idx = torch.topk(column.abs(), int(len(column) * sparsity),largest=False).indices
-
-            mask.view(-1)[idx] = 0
+            if update:
+                column = layer.view(-1)
+                idx = torch.topk(column.abs(), int(len(column) * sparsity),largest=False).indices
+                mask.view(-1)[idx] = 0
             
             with torch.no_grad():
                 layer *= mask
@@ -104,12 +108,12 @@ def main():
     layer = torch.nn.Linear(100, 10)
 
     prune = Pruning([("layer.weight", layer.weight), ("layer.bias", layer.bias)], 
-                    s_i=0, s_f=0.5, dt=10, t0=30, n=7)
-    print(prune.layers)
+                    s_i=0, s_f=0.8, dt=20, t0=50, n=5)
+    # print(prune.layers)
 
-    for i in range(100):
+    for i in range(200):
         prune.prune()
-        print(prune._stats())
+        print(i, prune._stats())
         prune.step()
 
     # print(prune)
