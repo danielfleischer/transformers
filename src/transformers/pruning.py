@@ -8,8 +8,8 @@ https://doi.org/10.48550/arXiv.1710.01878
 """
 
 from dataclasses import dataclass
-from typing import Optional
-
+from typing import Optional, List
+import torch
 # from .utils import logging
 
 # logger = logging.get_logger(__name__)
@@ -24,6 +24,7 @@ class Pruning:
     calculates sparsitiy level at each time step. 
 
     Attributes:
+        layers (List[torch.Tensor]): list of tensors to be pruned. 
         s_i (float): initial sparsity.
         s_f (float): final sparsity.
         dt (int): timesteps per each pruning update.
@@ -31,6 +32,7 @@ class Pruning:
         n (int): number of pruning steps (in terms of delta_t). 
     """
 
+    layers : List[torch.Tensor]
     s_i : float
     s_f : float
     dt : int

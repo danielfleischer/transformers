@@ -440,9 +440,23 @@ def main():
         model, optimizer, train_dataloader, eval_dataloader, lr_scheduler
     )
 
-    # Pruning
-    pruner =  Pruning(**pruning_config)
-    print("9999999999999999999999", pruner)
+    ###############################
+    ########   Pruning  ###########
+    ###############################
+
+    # FFN Layers in MobileBERT
+    ffn_filter = lambda s: (("intermediate" in s ) or 
+                            ("ffn" in s and "dense" in s) or
+                            ("output.dense" in s and "attention" not in s))
+
+    pruning_layers = [l[1] for l in model.named_parameters() if ffn_filter(l[0])]
+    pruner =  Pruning(layers=pruning_layers, **pruning_config)
+
+    # logger.info(f"  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
+    logger.info(f"  Pruning --- parameters: {pruning_config}")
+
+
+    ##########################################################
 
     # We need to recalculate our total training steps as the size of the training dataloader may have changed.
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)

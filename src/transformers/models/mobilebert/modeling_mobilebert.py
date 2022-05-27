@@ -823,8 +823,8 @@ class MobileBertModel(MobileBertPreTrainedModel):
         self.encoder = MobileBertEncoder(config)
 
         self.pooler = MobileBertPooler(config) if add_pooling_layer else None
-        self.pruning = Pruning(**getattr(config, "pruning"))
-        print("BBBBBBBBBBBBBBBBBBBBBBBBBBB", self.pruning)
+        # self.pruning = Pruning(**getattr(config, "pruning"))
+        # print("BBBBBBBBBBBBBBBBBBBBBBBBBBB", self.pruning)
         # Initialize weights and apply final processing
         self.post_init()
 
