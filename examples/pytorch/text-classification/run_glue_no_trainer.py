@@ -454,9 +454,10 @@ def main():
 
     # logger.info(f"  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
     logger.info(f"  Pruning --- parameters: {pruning_config}")
-    logger.info(f"  Pruning --- number of masks: {len(pruner.masks)}")
+    logger.info(f"  Pruning --- number of masks: {len(pruner.layers)}")
 
-    prune_layer_test = 'layer.20.ffn.1.intermediate.dense.weight'
+    # prune_layer_test = 'mobilebert.encoder.layer.20.ffn.1.intermediate.dense.weight'
+    # prune_layer = model.mobilebert.encoder.layer[20].ffn[1].intermediate.dense.weight
     ##########################################################
 
     # We need to recalculate our total training steps as the size of the training dataloader may have changed.
@@ -519,7 +520,7 @@ def main():
             resume_step = int(training_difference.replace("step_", ""))
             starting_epoch = resume_step // len(train_dataloader)
             resume_step -= starting_epoch * len(train_dataloader)
-
+    
     for epoch in range(starting_epoch, args.num_train_epochs):
         model.train()
         if args.with_tracking:
@@ -543,8 +544,8 @@ def main():
                 optimizer.zero_grad()
                 pruner.prune()
                 pruner.step()
-                logger.info(pruner._stats(6))
-                logger.info(f"equal?")
+                logger.info(pruner._stats(num=5))
+                # logger.info(f"equal? {prune_layer is pruner.layers[prune_layer_test]['weight']}")
                 progress_bar.update(1)
                 completed_steps += 1
 
