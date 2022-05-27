@@ -30,13 +30,15 @@ class Pruning:
         t_0 (int): initial timestep to increase sparsity. 
         n (int): number of pruning steps (in terms of delta_t). 
     """
-    
+
     s_i : float
     s_f : float
     delta_t : int
     t_0 : int
     n : int
 
+    def __post_init__(self):
+        print(f"Defined a pruner with s_i={self.s_i}, s_f={self.s_f}, dt={self.delta_t}, t0={self.t_0}, n={self.n}")    
 
     def scheduler(self, t):
         """
