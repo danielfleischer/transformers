@@ -70,6 +70,12 @@ class Pruning:
         "Update time stamp"
         self._time += 1
 
+
+    def _stats(self, num=-1) -> str:
+        msg = f"Sparsity: {self.scheduler()}. "
+        msg += f"Non zero weights: {[l.count_nonzero().item() for l in self.layers][:num]}"
+        return msg
+
     def scheduler(self):
         """
         Implementing the scheduler.

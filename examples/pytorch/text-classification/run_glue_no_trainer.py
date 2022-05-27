@@ -456,7 +456,6 @@ def main():
     logger.info(f"  Pruning --- parameters: {pruning_config}")
     logger.info(f"  Pruning --- number of masks: {len(pruner.masks)}")
 
-    exit()
     ##########################################################
 
     # We need to recalculate our total training steps as the size of the training dataloader may have changed.
@@ -541,8 +540,9 @@ def main():
                 optimizer.step()
                 lr_scheduler.step()
                 optimizer.zero_grad()
+                pruner.prune()
                 pruner.step()
-                print(pruner)
+                logger.info(pruner._stats(6))
                 progress_bar.update(1)
                 completed_steps += 1
 
