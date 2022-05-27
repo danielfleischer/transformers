@@ -52,7 +52,6 @@ from ...utils import (
     replace_return_docstrings,
 )
 from .configuration_mobilebert import MobileBertConfig
-from ...pruning import Pruning
 
 
 logger = logging.get_logger(__name__)
@@ -823,8 +822,7 @@ class MobileBertModel(MobileBertPreTrainedModel):
         self.encoder = MobileBertEncoder(config)
 
         self.pooler = MobileBertPooler(config) if add_pooling_layer else None
-        # self.pruning = Pruning(**getattr(config, "pruning"))
-        # print("BBBBBBBBBBBBBBBBBBBBBBBBBBB", self.pruning)
+
         # Initialize weights and apply final processing
         self.post_init()
 
@@ -1249,8 +1247,7 @@ class MobileBertForSequenceClassification(MobileBertPreTrainedModel):
         )
         self.dropout = nn.Dropout(classifier_dropout)
         self.classifier = nn.Linear(config.hidden_size, config.num_labels)
-        # print("AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-        # print(config.pruning)
+
         # Initialize weights and apply final processing
         self.post_init()
 

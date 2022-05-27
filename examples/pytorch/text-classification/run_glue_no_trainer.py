@@ -301,10 +301,6 @@ def main():
     # In distributed training, the .from_pretrained methods guarantee that only one local process can concurrently
     # download model & vocab.
     config = AutoConfig.from_pretrained(args.model_name_or_path, num_labels=num_labels, finetuning_task=args.task_name)
-    pruning_config = dict(s_i=args.prune_i, s_f=args.prune_f,
-                          dt=args.prune_dt, t0=args.prune_t0,
-                          n=args.prune_n)
-    config.update({"pruning" : pruning_config})
     tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, use_fast=not args.use_slow_tokenizer)
     model = AutoModelForSequenceClassification.from_pretrained(
         args.model_name_or_path,
@@ -443,6 +439,10 @@ def main():
     ###############################
     ########   Pruning  ###########
     ###############################
+    
+    pruning_config = dict(s_i=args.prune_i, s_f=args.prune_f,
+                          dt=args.prune_dt, t0=args.prune_t0,
+                          n=args.prune_n)
 
     # FFN Layers in MobileBERT
     ffn_filter = lambda s: (("intermediate" in s ) or 
@@ -520,7 +520,7 @@ def main():
             resume_step = int(training_difference.replace("step_", ""))
             starting_epoch = resume_step // len(train_dataloader)
             resume_step -= starting_epoch * len(train_dataloader)
-    
+
     for epoch in range(starting_epoch, args.num_train_epochs):
         model.train()
         if args.with_tracking:
