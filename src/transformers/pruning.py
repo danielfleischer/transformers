@@ -36,11 +36,16 @@ class Pruning:
     dt : int
     t0 : int
     n : int
+    _time : int = 0
 
     def __post_init__(self):
         print(f"Defined a pruner with s_i={self.s_i}, s_f={self.s_f}, dt={self.dt}, t0={self.t0}, n={self.n}")    
 
-    def scheduler(self, t):
+    def step(self):
+        "Update time stamp"
+        self._time += 1
+
+    def scheduler(self):
         """
         Implementing the scheduler.
 
@@ -49,9 +54,9 @@ class Pruning:
         
         sparse = self.s_i
         
-        if t > self.t0:
-            if t < (self.t0 + self.n * self.dt):
-                sparse = self.s_f + (self.s_i - self.s_f) * (1 - (t - self.t0)/(self.n * self.dt))**3
+        if self._time > self.t0:
+            if self._time < (self.t0 + self.n * self.dt):
+                sparse = self.s_f + (self.s_i - self.s_f) * (1 - (self._time - self.t0)/(self.n * self.dt))**3
             else:
                 sparse = self.s_f
 
@@ -60,12 +65,14 @@ class Pruning:
 
 def main():
 
-    prune = Pruning(s_i=0, s_f=0.5, dt=10, t0=30, n=300)
+    prune = Pruning(s_i=0, s_f=0.5, dt=10, t0=30, n=7)
     
     for i in range(100):
-        print(prune.scheduler(i))
 
-    print(prune)
+        print(prune.scheduler())
+        prune.step()
+
+    # print(prune)
 
 if __name__ == "__main__":
     main()
