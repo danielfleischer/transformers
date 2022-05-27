@@ -30,6 +30,10 @@ class Pruning:
     """
     def __init__(self, layers, s_i, s_f, dt, t0, n):
 
+        assert dt > 0, "delta timestep is positive"
+        assert t0 > 0, "initial timestep is positive"
+        assert n > 0, "number of pruning steps is positive"
+        
         # Parameters
         self.s_i = s_i
         self.s_f = s_f
@@ -85,11 +89,12 @@ class Pruning:
         return msg
 
 
-    def scheduler(self):
+    def scheduler(self) -> float:
         """
         Implementing the scheduler.
 
-        Returns the sparsity
+        Returns:
+            sparsity (float)
         """
         
         sparse = self.s_i
