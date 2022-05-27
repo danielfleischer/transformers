@@ -8,6 +8,8 @@ https://doi.org/10.48550/arXiv.1710.01878
 """
 
 from operator import itemgetter
+import math
+import statistics
 import torch
 
 from .utils import logging
@@ -33,7 +35,7 @@ class Pruning:
         assert dt > 0, "delta timestep is positive"
         assert t0 > 0, "initial timestep is positive"
         assert n > 0, "number of pruning steps is positive"
-        
+
         # Parameters
         self.s_i = s_i
         self.s_f = s_f
@@ -83,9 +85,15 @@ class Pruning:
         self._time += 1
 
 
-    def _stats(self, num=-1) -> str:
+    def _stats(self) -> str:
         msg = f"Sparsity: {self.scheduler()}. "
-        msg += f"Non zero weights: {[l['weight'].count_nonzero().item() for l in self.layers.values()][:num]}"
+
+        data = []
+        for layer in self.layers.values():
+            weight = layer['weight']
+            data.append(weight.count_nonzero().item() / math.prod(weight.shape))
+
+        msg += f"Non zero weights: {statistics.mean(data)}"
         return msg
 
 

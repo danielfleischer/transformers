@@ -544,7 +544,7 @@ def main():
                 optimizer.zero_grad()
                 pruner.prune()
                 pruner.step()
-                logger.info(pruner._stats(num=5))
+                logger.info(pruner._stats())
                 # logger.info(f"equal? {prune_layer is pruner.layers[prune_layer_test]['weight']}")
                 progress_bar.update(1)
                 completed_steps += 1
