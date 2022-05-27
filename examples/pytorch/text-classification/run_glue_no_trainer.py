@@ -93,6 +93,24 @@ def parse_args():
         action="store_true",
         help="If passed, pad all samples to `max_length`. Otherwise, dynamic padding is used.",
     )
+
+    # Pruning arguments
+    parser.add_argument(
+        "--prune_i", type=float, default=0, help="Initial pruning sparsity."
+    )
+    parser.add_argument(
+        "--prune_f", type=float, default=0, help="Final pruning sparsity."
+    )
+    parser.add_argument(
+        "--prune_dt", type=int, default=0, help="Delta timestamps for updating."
+    )
+    parser.add_argument(
+        "--prune_t0", type=int, default=0, help="Initial timestamp to increase sparsity."
+    )
+    parser.add_argument(
+        "--prune_n", type=int, default=0, help="Number of pruning steps."
+    )
+
     parser.add_argument(
         "--model_name_or_path",
         type=str,
@@ -283,6 +301,10 @@ def main():
     # In distributed training, the .from_pretrained methods guarantee that only one local process can concurrently
     # download model & vocab.
     config = AutoConfig.from_pretrained(args.model_name_or_path, num_labels=num_labels, finetuning_task=args.task_name)
+    pruning_config = dict(s_i=args.prune_i, s_f=args.prune_f,
+                          dt=args.prune_dt, t0=args.prune_t0,
+                          n=args.prune_n)
+    config.update({"pruning" : pruning_config})
     tokenizer = AutoTokenizer.from_pretrained(args.model_name_or_path, use_fast=not args.use_slow_tokenizer)
     model = AutoModelForSequenceClassification.from_pretrained(
         args.model_name_or_path,
