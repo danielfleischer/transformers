@@ -9,9 +9,7 @@ https://doi.org/10.48550/arXiv.1710.01878
 
 from operator import itemgetter
 import math
-import statistics
 import torch
-
 from .utils import logging
 logger = logging.get_logger(__name__)
 logger.setLevel(logging.INFO)
@@ -91,14 +89,17 @@ class Pruning:
 
 
     def _stats(self) -> str:
-        msg = f"Sparsity: {self.scheduler()}. "
+        msg = f"Sparsity: {100 * self.scheduler():.3f}%. "
 
-        data = []
+        # data = []
+        total_weights = non_zero_weights = 0
+
         for layer in self.layers.values():
             weight = layer['weight']
-            data.append(weight.count_nonzero().item() / math.prod(weight.shape))
+            total_weights += math.prod(weight.shape)
+            non_zero_weights += weight.count_nonzero().item()
 
-        msg += f"Non zero weights: {statistics.mean(data)}"
+        msg += f"Non zero weights: {100 * non_zero_weights / total_weights:.3f}%"
         return msg
 
 
