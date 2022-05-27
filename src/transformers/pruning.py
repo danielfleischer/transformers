@@ -36,6 +36,9 @@ class Pruning:
         assert t0 >= 0, "initial timestep is non negative"
         assert n > 0, "number of pruning steps is positive"
 
+        if s_i > s_f:
+            logger.warning("WARNING: PRUNING - final sparsity is lower than inital sparsity; this is probably a mistake.")
+
         # Parameters
         self.s_i = s_i
         self.s_f = s_f

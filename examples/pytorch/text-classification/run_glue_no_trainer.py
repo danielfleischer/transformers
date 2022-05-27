@@ -96,19 +96,22 @@ def parse_args():
 
     # Pruning arguments
     parser.add_argument(
-        "--prune_i", type=float, default=0, help="Initial pruning sparsity."
+        "--prune", action="store_true", help="If pass, prune FFN layers using a scheduler."
     )
     parser.add_argument(
-        "--prune_f", type=float, default=0, help="Final pruning sparsity."
+        "--prune_initial", type=float, default=0, help="Initial pruning sparsity."
+    )
+    parser.add_argument(
+        "--prune_final", type=float, default=0, help="Final pruning sparsity."
     )
     parser.add_argument(
         "--prune_dt", type=int, default=1, help="Delta timestamps for updating."
     )
     parser.add_argument(
-        "--prune_t0", type=int, default=0, help="Initial timestamp to increase sparsity."
+        "--prune_start", type=int, default=0, help="Initial timestamp to increase sparsity."
     )
     parser.add_argument(
-        "--prune_n", type=int, default=1, help="Number of pruning steps."
+        "--prune_steps", type=int, default=1, help="Number of pruning steps."
     )
 
     parser.add_argument(
@@ -436,28 +439,34 @@ def main():
         model, optimizer, train_dataloader, eval_dataloader, lr_scheduler
     )
 
-    ###############################
-    ########   Pruning  ###########
-    ###############################
-    
-    pruning_config = dict(s_i=args.prune_i, s_f=args.prune_f,
-                          dt=args.prune_dt, t0=args.prune_t0,
-                          n=args.prune_n)
+    #############################################
+    ###############   Pruning  ##################
+    #############################################
 
-    # FFN Layers in MobileBERT
-    ffn_filter = lambda s: (("intermediate" in s ) or 
-                            ("ffn" in s and "dense" in s) or
-                            ("output.dense" in s and "attention" not in s))
+    pruning_config = dict(s_i=args.prune_initial, 
+                          s_f=args.prune_final,
+                          dt=args.prune_dt, 
+                          t0=args.prune_start,
+                          n=args.prune_steps)
 
-    pruning_layers = [l for l in model.named_parameters() if ffn_filter(l[0])]
-    pruner =  Pruning(layers=pruning_layers, **pruning_config)
+    # FFN Layers
+    if 'distilbert' in model.name_or_path:
+        ffn_filter = lambda s: 'ffn' in s
+        
+    elif 'mobilebert' in model.name_or_path:
+        ffn_filter = lambda s: (("intermediate" in s ) or 
+                                ("ffn" in s and "dense" in s) or
+                                ("output.dense" in s and "attention" not in s))
+    else:
+        ffn_filter = lambda _: True
 
-    # logger.info(f"  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
-    logger.info(f"  Pruning --- parameters: {pruning_config}")
-    logger.info(f"  Pruning --- number of masks: {len(pruner.layers)}")
+    if args.prune:
+        pruning_layers = (l for l in model.named_parameters() if ffn_filter(l[0]))
+        pruner = Pruning(layers=pruning_layers, **pruning_config)
 
-    # prune_layer_test = 'mobilebert.encoder.layer.20.ffn.1.intermediate.dense.weight'
-    # prune_layer = model.mobilebert.encoder.layer[20].ffn[1].intermediate.dense.weight
+        logger.info(f"  Pruning --- parameters: {pruning_config}")
+        logger.info(f"  Pruning --- number of masks: {len(pruner.layers)}")
+
     ##########################################################
 
     # We need to recalculate our total training steps as the size of the training dataloader may have changed.
@@ -542,10 +551,13 @@ def main():
                 optimizer.step()
                 lr_scheduler.step()
                 optimizer.zero_grad()
-                pruner.prune()
-                pruner.step()
-                logger.info(pruner._stats())
-                # logger.info(f"equal? {prune_layer is pruner.layers[prune_layer_test]['weight']}")
+                # Pruning code
+                if args.prune:
+                    pruner.prune()
+                    pruner.step()
+                    if step % args.prune_dt == 0:
+                        logger.info(pruner._stats())
+
                 progress_bar.update(1)
                 completed_steps += 1
 
