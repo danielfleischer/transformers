@@ -33,7 +33,7 @@ class Pruning:
     def __init__(self, layers, s_i, s_f, dt, t0, n):
 
         assert dt > 0, "delta timestep is positive"
-        assert t0 > 0, "initial timestep is positive"
+        assert t0 >= 0, "initial timestep is non negative"
         assert n > 0, "number of pruning steps is positive"
 
         # Parameters
@@ -64,7 +64,9 @@ class Pruning:
         # Updating masks every dt timestamps
         # But need to prune every timestamp
 
-        update = self._time % self.dt == 0
+        update = (self._time % self.dt == 0    and
+                  self.t0 < self._time < (self.t0 + self.n * self.dt))
+                  
         if update: sparsity = self.scheduler()
             
         for value in self.layers.values():

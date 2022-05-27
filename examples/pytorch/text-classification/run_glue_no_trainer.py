@@ -102,13 +102,13 @@ def parse_args():
         "--prune_f", type=float, default=0, help="Final pruning sparsity."
     )
     parser.add_argument(
-        "--prune_dt", type=int, default=0, help="Delta timestamps for updating."
+        "--prune_dt", type=int, default=1, help="Delta timestamps for updating."
     )
     parser.add_argument(
         "--prune_t0", type=int, default=0, help="Initial timestamp to increase sparsity."
     )
     parser.add_argument(
-        "--prune_n", type=int, default=0, help="Number of pruning steps."
+        "--prune_n", type=int, default=1, help="Number of pruning steps."
     )
 
     parser.add_argument(
