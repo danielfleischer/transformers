@@ -50,7 +50,7 @@ class Pruning:
         self.layers = {}
         for name, layer in layers:
             self.layers[name] = {"weight" : layer,
-                                 "mask" : torch.ones(layer.shape, dtype=bool)}
+                                 "mask" : torch.ones(layer.shape, dtype=bool).to(layer.device)}
 
         logger.info(f"Defined a pruner; s_i={self.s_i}, s_f={self.s_f}, dt={self.dt}, t0={self.t0}, n={self.n}")    
 
