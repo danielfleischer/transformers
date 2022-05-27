@@ -26,19 +26,19 @@ class Pruning:
     Attributes:
         s_i (float): initial sparsity.
         s_f (float): final sparsity.
-        delta_t (int): timesteps per each pruning update.
-        t_0 (int): initial timestep to increase sparsity. 
+        dt (int): timesteps per each pruning update.
+        t0 (int): initial timestep to increase sparsity. 
         n (int): number of pruning steps (in terms of delta_t). 
     """
 
     s_i : float
     s_f : float
-    delta_t : int
-    t_0 : int
+    dt : int
+    t0 : int
     n : int
 
     def __post_init__(self):
-        print(f"Defined a pruner with s_i={self.s_i}, s_f={self.s_f}, dt={self.delta_t}, t0={self.t_0}, n={self.n}")    
+        print(f"Defined a pruner with s_i={self.s_i}, s_f={self.s_f}, dt={self.dt}, t0={self.t0}, n={self.n}")    
 
     def scheduler(self, t):
         """
@@ -49,9 +49,9 @@ class Pruning:
         
         sparse = self.s_i
         
-        if t > self.t_0:
-            if t < (self.t_0 + self.n * self.delta_t):
-                sparse = self.s_f + (self.s_i - self.s_f) * (1 - (t - self.t_0)/(self.n * self.delta_t))**3
+        if t > self.t0:
+            if t < (self.t0 + self.n * self.dt):
+                sparse = self.s_f + (self.s_i - self.s_f) * (1 - (t - self.t0)/(self.n * self.dt))**3
             else:
                 sparse = self.s_f
 
@@ -60,11 +60,12 @@ class Pruning:
 
 def main():
 
-    prune = Pruning(0, 0.5, 10, 30, 3)
+    prune = Pruning(s_i=0, s_f=0.5, dt=10, t0=30, n=300)
     
     for i in range(100):
         print(prune.scheduler(i))
 
+    print(prune)
 
 if __name__ == "__main__":
     main()
