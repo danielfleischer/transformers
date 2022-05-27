@@ -20,7 +20,7 @@ class Pruning:
     calculates sparsitiy level at each time step. 
 
     Attributes:
-        layers (List[torch.Tensor]): list of tensors to be pruned. 
+        layers (List[Tuple[str, torch.Tensor]]): list of named tensors to be pruned. 
         s_i (float): initial sparsity.
         s_f (float): final sparsity.
         dt (int): timesteps per each pruning update.
@@ -40,7 +40,7 @@ class Pruning:
         # Pruning state of every layer is represented
         # by the boolean masks. 0 means a neuron is dead. 
         self.masks = []
-        for layer in self.layers:
+        for name, layer in self.layers:
             self.masks.append(torch.ones(layer.shape, dtype=bool))
 
         logger.info(f"Defined a pruner with s_i={self.s_i}, s_f={self.s_f}, dt={self.dt}, t0={self.t0}, n={self.n}")    
@@ -55,7 +55,7 @@ class Pruning:
 
         sparsity = self.scheduler()
 
-        for layer, mask in zip(self.layers, self.masks):
+        for (name, layer), mask in zip(self.layers, self.masks):
             
             column = layer.view(-1)
             idx = torch.topk(column.abs(), int(len(column) * sparsity),largest=False).indices
@@ -73,7 +73,7 @@ class Pruning:
 
     def _stats(self, num=-1) -> str:
         msg = f"Sparsity: {self.scheduler()}. "
-        msg += f"Non zero weights: {[l.count_nonzero().item() for l in self.layers][:num]}"
+        msg += f"Non zero weights: {[l[1].count_nonzero().item() for l in self.layers][:num]}"
         return msg
 
     def scheduler(self):
@@ -98,13 +98,14 @@ def main():
 
     layer = torch.nn.Linear(100, 10)
 
-    prune = Pruning([layer.weight, layer.bias], s_i=0, s_f=0.5, dt=10, t0=30, n=7)
+    prune = Pruning([("layer.weight", layer.weight), ("layer.bias", layer.bias)], 
+                    s_i=0, s_f=0.5, dt=10, t0=30, n=7)
     print(prune.masks[0].shape)
 
     for i in range(100):
         prune.prune()
         print(f"Sparsity: {prune.scheduler()}. Non zero weights", 
-              [l.count_nonzero() for l in prune.layers])
+              [l[1].count_nonzero() for l in prune.layers])
         prune.step()
 
     # print(prune)

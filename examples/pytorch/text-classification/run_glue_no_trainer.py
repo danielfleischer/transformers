@@ -449,13 +449,14 @@ def main():
                             ("ffn" in s and "dense" in s) or
                             ("output.dense" in s and "attention" not in s))
 
-    pruning_layers = [l[1] for l in model.named_parameters() if ffn_filter(l[0])]
+    pruning_layers = [l for l in model.named_parameters() if ffn_filter(l[0])]
     pruner =  Pruning(layers=pruning_layers, **pruning_config)
 
     # logger.info(f"  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%")
     logger.info(f"  Pruning --- parameters: {pruning_config}")
     logger.info(f"  Pruning --- number of masks: {len(pruner.masks)}")
 
+    prune_layer_test = 'layer.20.ffn.1.intermediate.dense.weight'
     ##########################################################
 
     # We need to recalculate our total training steps as the size of the training dataloader may have changed.
@@ -543,6 +544,7 @@ def main():
                 pruner.prune()
                 pruner.step()
                 logger.info(pruner._stats(6))
+                logger.info(f"equal?")
                 progress_bar.update(1)
                 completed_steps += 1
 
