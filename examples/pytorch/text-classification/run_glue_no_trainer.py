@@ -95,7 +95,8 @@ def parse_args():
         help="If passed, pad all samples to `max_length`. Otherwise, dynamic padding is used.",
     )
 
-    # Pruning arguments
+    #############    Pruning arguments   #################
+    
     parser.add_argument(
         "--prune", action="store_true", help="If pass, prune FFN layers using a scheduler."
     )
@@ -117,6 +118,7 @@ def parse_args():
     parser.add_argument(
         "--prune_bias", action="store_true", help="whether to prune bias layers."
     )
+    #####################################################
 
     parser.add_argument(
         "--model_name_or_path",
@@ -556,13 +558,13 @@ def main():
                 optimizer.step()
                 lr_scheduler.step()
                 optimizer.zero_grad()
-                ######### Pruning code ########
+                ############ Pruning code ############
                 if args.prune:
                     pruner.prune()
                     pruner.step()
                     if step % args.prune_dt == 0:
                         logger.info(pruner._stats())
-                ###############################
+                ######################################
 
                 progress_bar.update(1)
                 completed_steps += 1

@@ -25,6 +25,7 @@ class Pruning:
         t0 (int): initial timestep to increase sparsity. 
         n (int): number of pruning steps (in terms of delta_t). 
     """
+    
     def __init__(self, layers, s_i, s_f, dt, t0, n):
 
         assert dt > 0, "delta timestep is positive"
@@ -40,6 +41,8 @@ class Pruning:
         self.dt = dt
         self.t0 = t0
         self.n = n
+
+        # Counter
         self._time = 0
 
         # Pruning state of each layer is represented
@@ -50,6 +53,26 @@ class Pruning:
                                  "mask" : torch.ones(layer.shape, dtype=bool).to(layer.device)}
 
         logger.info(f"Defined a pruner; s_i={self.s_i}, s_f={self.s_f}, dt={self.dt}, t0={self.t0}, n={self.n}")    
+
+
+    def scheduler(self) -> float:
+        """
+        Implementing the sparsity level scheduler.
+
+        Returns:
+            sparsity (float)
+        """
+        
+        sparse = self.s_i
+        
+        if self._time > self.t0:
+            if self._time < (self.t0 + self.n * self.dt):
+                sparse = self.s_f + ((self.s_i - self.s_f) * 
+                                     (1 - (self._time - self.t0)/(self.n * self.dt))**3)
+            else:
+                sparse = self.s_f
+
+        return sparse
 
 
     def prune(self):
@@ -81,7 +104,7 @@ class Pruning:
         
         
     def step(self):
-        "Update time stamp"
+        "Increments internal time step."
         self._time += 1
 
 
@@ -98,24 +121,6 @@ class Pruning:
         msg += f"Non zero weights: {100 * non_zero_weights / total_weights:.3f}%"
         return msg
 
-
-    def scheduler(self) -> float:
-        """
-        Implementing the scheduler.
-
-        Returns:
-            sparsity (float)
-        """
-        
-        sparse = self.s_i
-        
-        if self._time > self.t0:
-            if self._time < (self.t0 + self.n * self.dt):
-                sparse = self.s_f + (self.s_i - self.s_f) * (1 - (self._time - self.t0)/(self.n * self.dt))**3
-            else:
-                sparse = self.s_f
-
-        return sparse
 
 
 def main():
