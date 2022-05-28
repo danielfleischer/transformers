@@ -8,7 +8,6 @@ https://doi.org/10.48550/arXiv.1710.01878
 """
 
 from operator import itemgetter
-import math
 import torch
 from .utils import logging
 logger = logging.get_logger(__name__)
@@ -16,12 +15,10 @@ logger.setLevel(logging.INFO)
 
 
 class Pruning:
-    """Pruning class
-
-    calculates sparsitiy level at each time step. 
+    """Implementing Pruning
 
     Attributes:
-        layers (List[Tuple[str, torch.Tensor]]): list of named tensors to be pruned. 
+        layers (Iterable[Tuple[str, torch.Tensor]]): list of named tensors to be pruned. 
         s_i (float): initial sparsity.
         s_f (float): final sparsity.
         dt (int): timesteps per each pruning update.
@@ -96,7 +93,7 @@ class Pruning:
 
         for layer in self.layers.values():
             weight = layer['weight']
-            total_weights += math.prod(weight.shape)
+            total_weights += weight.numel()
             non_zero_weights += weight.count_nonzero().item()
 
         msg += f"Non zero weights: {100 * non_zero_weights / total_weights:.3f}%"
@@ -128,14 +125,13 @@ def main():
 
     prune = Pruning([("layer.weight", layer.weight), ("layer.bias", layer.bias)], 
                     s_i=0, s_f=0.8, dt=20, t0=50, n=5)
-    # print(prune.layers)
+    
 
     for i in range(200):
         prune.prune()
         print(i, prune._stats())
         prune.step()
 
-    # print(prune)
 
 if __name__ == "__main__":
     main()
