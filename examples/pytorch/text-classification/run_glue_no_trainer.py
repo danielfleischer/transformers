@@ -18,6 +18,7 @@ import json
 import logging
 import math
 import os
+import re
 import random
 from pathlib import Path
 
@@ -451,17 +452,13 @@ def main():
 
     # FFN Layers
     if 'distilbert' in model.name_or_path:
-        ffn_filter = lambda s: 'ffn' in s
+        prune_layer_re = "ffn"
         
-    elif 'mobilebert' in model.name_or_path:
-        ffn_filter = lambda s: (("intermediate" in s ) or 
-                                ("ffn" in s and "dense" in s) or
-                                ("output.dense" in s and "attention" not in s))
     else:
-        ffn_filter = lambda _: True
-
+        prune_layer_re = r"intermediate|(?<!attention.)output.dense"
+    
     if args.prune:
-        pruning_layers = (l for l in model.named_parameters() if ffn_filter(l[0]))
+        pruning_layers = (l for l in model.named_parameters() if re.findall(prune_layer_re, l[0]))
         pruner = Pruning(layers=pruning_layers, **pruning_config)
 
         logger.info(f"  Pruning --- parameters: {pruning_config}")

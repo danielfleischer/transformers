@@ -88,9 +88,8 @@ class Pruning:
     def _stats(self) -> str:
         msg = f"Sparsity: {100 * self.scheduler():.3f}%. "
 
-        # data = []
         total_weights = non_zero_weights = 0
-
+        
         for layer in self.layers.values():
             weight = layer['weight']
             total_weights += weight.numel()
