@@ -114,6 +114,9 @@ def parse_args():
     parser.add_argument(
         "--prune_steps", type=int, default=1, help="Number of pruning steps."
     )
+    parser.add_argument(
+        "--prune_bias", action="store_true", help="whether to prune bias layers."
+    )
 
     parser.add_argument(
         "--model_name_or_path",
@@ -450,19 +453,24 @@ def main():
                           t0=args.prune_start,
                           n=args.prune_steps)
 
-    # FFN Layers
-    if 'distilbert' in model.name_or_path:
-        prune_layer_re = "ffn"
-        
-    else:
-        prune_layer_re = r"intermediate|(?<!attention.)output.dense"
-    
     if args.prune:
-        pruning_layers = (l for l in model.named_parameters() if re.findall(prune_layer_re, l[0]))
+        
+        # FFN Layers Selection
+        if 'distilbert' in model.name_or_path:
+            prune_layer_re = "ffn"
+        else:
+            prune_layer_re = r"(intermediate|(?<!attention.)output.dense)"
+    
+        prune_ignore_bias = "" if args.prune_bias else r"(!?.*bias)"
+
+        pruning_layers = (l for l in model.named_parameters() 
+                          if re.findall(prune_layer_re + prune_ignore_bias, l[0]))
+
+        # Class Initialization
         pruner = Pruning(layers=pruning_layers, **pruning_config)
 
         logger.info(f"  Pruning --- parameters: {pruning_config}")
-        logger.info(f"  Pruning --- number of masks: {len(pruner.layers)}")
+        logger.info(f"  Pruning --- number of layers: {len(pruner.layers)}")
 
     ##########################################################
 
