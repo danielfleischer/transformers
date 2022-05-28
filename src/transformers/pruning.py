@@ -1,5 +1,5 @@
 """
- * Pruning utilities * 
+ **** Pruning utilities ****
 
 Algorithm based on: 
 
@@ -42,8 +42,8 @@ class Pruning:
         self.n = n
         self._time = 0
 
-        # Pruning state of every layer is represented
-        # by the boolean masks. 0 means a neuron is dead. 
+        # Pruning state of each layer is represented
+        # by boolean masks. 0 means a neuron is dead. 
         self.layers = {}
         for name, layer in layers:
             self.layers[name] = {"weight" : layer,
@@ -89,7 +89,7 @@ class Pruning:
         msg = f"Sparsity: {100 * self.scheduler():.3f}%. "
 
         total_weights = non_zero_weights = 0
-        
+
         for layer in self.layers.values():
             weight = layer['weight']
             total_weights += weight.numel()

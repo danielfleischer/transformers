@@ -472,7 +472,7 @@ def main():
         logger.info(f"  Pruning --- parameters: {pruning_config}")
         logger.info(f"  Pruning --- number of layers: {len(pruner.layers)}")
 
-    ##########################################################
+    #########################################################################
 
     # We need to recalculate our total training steps as the size of the training dataloader may have changed.
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
@@ -556,12 +556,13 @@ def main():
                 optimizer.step()
                 lr_scheduler.step()
                 optimizer.zero_grad()
-                # Pruning code
+                ######### Pruning code ########
                 if args.prune:
                     pruner.prune()
                     pruner.step()
                     if step % args.prune_dt == 0:
                         logger.info(pruner._stats())
+                ###############################
 
                 progress_bar.update(1)
                 completed_steps += 1
