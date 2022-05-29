@@ -50,7 +50,8 @@ class Pruning:
         self.layers = {}
         for name, layer in layers:
             self.layers[name] = {"weight" : layer,
-                                 "mask" : torch.ones(layer.shape, dtype=bool).to(layer.device)}
+                                 "mask" : torch.ones(layer.shape, dtype=bool)
+                                               .to(layer.device)}
 
         logger.info(f"Defined a pruner; s_i={self.s_i}, s_f={self.s_f}, dt={self.dt}, t0={self.t0}, n={self.n}")    
 
@@ -62,15 +63,20 @@ class Pruning:
         Returns:
             sparsity (float)
         """
+        s_i  = self.s_i
+        s_f  = self.s_f
+        dt   = self.dt
+        t0   = self.t0
+        n    = self.n
+        time = self._time
+
+        sparse = s_i
         
-        sparse = self.s_i
-        
-        if self._time > self.t0:
-            if self._time < (self.t0 + self.n * self.dt):
-                sparse = self.s_f + ((self.s_i - self.s_f) * 
-                                     (1 - (self._time - self.t0)/(self.n * self.dt))**3)
+        if time > t0:
+            if time < (t0 + n * dt):
+                sparse = s_f + (s_i - s_f) * (1 - (time - t0)/(n * dt))**3
             else:
-                sparse = self.s_f
+                sparse = s_f
 
         return sparse
 
@@ -85,22 +91,22 @@ class Pruning:
         # Updating masks every dt timestamps
         # But need to prune every timestamp
 
-        update = (self._time % self.dt == 0    and
-                  self.t0 < self._time < (self.t0 + self.n * self.dt))
+        update_mask = (self._time % self.dt == 0   and
+                       self.t0 < self._time < (self.t0 + self.n * self.dt))
                   
-        if update: sparsity = self.scheduler()
+        if update_mask: sparsity = self.scheduler()
             
         for value in self.layers.values():
             
             layer, mask = itemgetter('weight', 'mask')(value)
 
-            if update:
+            if update_mask:
+                with torch.no_grad(): layer *= mask
                 column = layer.view(-1)
                 idx = torch.topk(column.abs(), int(len(column) * sparsity),largest=False).indices
                 mask.view(-1)[idx] = 0
             
-            with torch.no_grad():
-                layer *= mask
+            with torch.no_grad(): layer *= mask
         
         
     def step(self):
