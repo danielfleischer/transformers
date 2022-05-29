@@ -18,6 +18,7 @@ import json
 import logging
 import math
 import os
+import re
 import random
 from pathlib import Path
 
@@ -45,7 +46,7 @@ from transformers import (
 )
 from transformers.utils import get_full_repo_name
 from transformers.utils.versions import require_version
-
+from transformers.pruning import Pruning
 
 logger = get_logger(__name__)
 
@@ -93,6 +94,32 @@ def parse_args():
         action="store_true",
         help="If passed, pad all samples to `max_length`. Otherwise, dynamic padding is used.",
     )
+
+    #############    Pruning arguments   #################
+    
+    parser.add_argument(
+        "--prune", action="store_true", help="If pass, prune FFN layers using a scheduler."
+    )
+    parser.add_argument(
+        "--prune_initial", type=float, default=0, help="Initial pruning sparsity."
+    )
+    parser.add_argument(
+        "--prune_final", type=float, default=0, help="Final pruning sparsity."
+    )
+    parser.add_argument(
+        "--prune_dt", type=int, default=1, help="Delta timestamps for updating."
+    )
+    parser.add_argument(
+        "--prune_start", type=int, default=0, help="Initial timestamp to increase sparsity."
+    )
+    parser.add_argument(
+        "--prune_steps", type=int, default=1, help="Number of pruning steps."
+    )
+    parser.add_argument(
+        "--prune_bias", action="store_true", help="whether to prune bias layers."
+    )
+    #####################################################
+
     parser.add_argument(
         "--model_name_or_path",
         type=str,
@@ -418,6 +445,37 @@ def main():
         model, optimizer, train_dataloader, eval_dataloader, lr_scheduler
     )
 
+    #############################################
+    ###############   Pruning  ##################
+    #############################################
+
+    pruning_config = dict(s_i=args.prune_initial, 
+                          s_f=args.prune_final,
+                          dt=args.prune_dt, 
+                          t0=args.prune_start,
+                          n=args.prune_steps)
+
+    if args.prune:
+        
+        # FFN Layers Selection
+        if 'distilbert' in model.name_or_path:
+            prune_layer_re = "ffn"
+        else:
+            prune_layer_re = r"(intermediate|(?<!attention.)output.dense)"
+    
+        prune_ignore_bias = "" if args.prune_bias else r"(!?.*bias)"
+
+        pruning_layers = (l for l in model.named_parameters() 
+                          if re.findall(prune_layer_re + prune_ignore_bias, l[0]))
+
+        # Class Initialization
+        pruner = Pruning(layers=pruning_layers, **pruning_config)
+
+        logger.info(f"  Pruning --- parameters: {pruning_config}")
+        logger.info(f"  Pruning --- number of layers: {len(pruner.layers)}")
+
+    #########################################################################
+
     # We need to recalculate our total training steps as the size of the training dataloader may have changed.
     num_update_steps_per_epoch = math.ceil(len(train_dataloader) / args.gradient_accumulation_steps)
     args.max_train_steps = args.num_train_epochs * num_update_steps_per_epoch
@@ -500,6 +558,14 @@ def main():
                 optimizer.step()
                 lr_scheduler.step()
                 optimizer.zero_grad()
+                ############ Pruning code ############
+                if args.prune:
+                    pruner.prune()
+                    pruner.step()
+                    if step % args.prune_dt == 0:
+                        logger.info(pruner._stats())
+                ######################################
+
                 progress_bar.update(1)
                 completed_steps += 1
 
